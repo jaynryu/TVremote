@@ -1,0 +1,20 @@
+"""UI 색상 및 스타일 상수."""
+
+BG_PRIMARY = "#1c1c1e"
+BG_SECONDARY = "#2c2c2e"
+BG_TERTIARY = "#3a3a3c"
+BG_ACTIVE = "#4a4a4c"
+
+ACCENT_BLUE = "#0a84ff"
+ACCENT_BLUE_ACTIVE = "#0070e0"
+DANGER_RED = "#ff453a"
+
+TEXT_PRIMARY = "#ffffff"
+TEXT_SECONDARY = "#8e8e93"
+TEXT_HINT = "#636366"
+
+FONT_FAMILY = "SF Pro Display"
+FONT_FALLBACK = "Helvetica Neue"
+
+WINDOW_WIDTH = 400
+WINDOW_HEIGHT = 700

@@ -1,0 +1,2 @@
+pyatv>=0.14.0
+customtkinter>=5.2.0

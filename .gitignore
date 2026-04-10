@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+
+# Build artifacts
+app/build/
+app/dist/
+
+# macOS
+.DS_Store
+
+# Credentials
+credentials.json
+
+# IDE
+.idea/
+.vscode/
+
+# Xcode user data
+xcuserdata/
+*.xcuserstate
+
+# Claude Code
+.claude/
+
+# PyInstaller
+*.spec.bak
