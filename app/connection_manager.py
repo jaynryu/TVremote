@@ -14,7 +14,7 @@ CREDENTIALS_FILE = CREDENTIALS_DIR / "credentials.json"
 
 VALID_COMMANDS = {
     "up", "down", "left", "right", "select",
-    "menu", "home", "home_hold",
+    "menu", "home", "home_hold", "control_center",
     "play", "pause", "play_pause",
     "next", "previous",
     "volume_up", "volume_down",
@@ -165,18 +165,41 @@ class ConnectionManager:
         else:
             await method()
 
-    async def toggle_power(self):
-        """전원을 켜거나 끈다."""
+    @property
+    def is_suspended(self) -> bool:
+        return self._is_suspended
+
+    async def sleep(self):
+        """Apple TV를 절전한다."""
         device_id = self.connected_device_id
         if not device_id:
             raise RuntimeError("연결된 기기가 없습니다.")
 
         atv = self.get_connection(device_id)
-        state = atv.power.power_state
-        if state == PowerState.On:
+
+        from pyatv.protocols.companion.api import HidCommand
+        companion_rc = atv.remote_control.get(pyatv.const.Protocol.Companion)
+        if companion_rc:
+            await companion_rc._press_button(HidCommand.Sleep)
+        else:
             await atv.power.turn_off()
+        self._is_suspended = True
+
+    async def wake(self):
+        """Apple TV를 깨운다."""
+        device_id = self.connected_device_id
+        if not device_id:
+            raise RuntimeError("연결된 기기가 없습니다.")
+
+        atv = self.get_connection(device_id)
+
+        from pyatv.protocols.companion.api import HidCommand
+        companion_rc = atv.remote_control.get(pyatv.const.Protocol.Companion)
+        if companion_rc:
+            await companion_rc._press_button(HidCommand.Wake)
         else:
             await atv.power.turn_on()
+        self._is_suspended = False
 
     async def send_text(self, text: str):
         """Apple TV에 텍스트를 전송한다."""

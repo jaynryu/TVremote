@@ -162,10 +162,18 @@ class RemoteFrame(ctk.CTkFrame):
         )
 
     def _toggle_power(self):
-        self._bridge.run_with_callback(
-            self._manager.toggle_power(),
-            root=self,
-        )
+        if self._manager.is_suspended:
+            # 꺼져있으면 깨우기
+            self._bridge.run_with_callback(
+                self._manager.wake(),
+                root=self,
+            )
+        else:
+            # 켜져있으면 컨트롤 센터 표시 (리모컨 전원 버튼과 동일)
+            self._bridge.run_with_callback(
+                self._manager.send_command("control_center"),
+                root=self,
+            )
 
     def _toggle_keyboard(self):
         self._keyboard_visible = not self._keyboard_visible
