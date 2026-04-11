@@ -35,9 +35,25 @@ macOS에서 Apple TV를 제어하는 리모트 앱입니다.
 # 의존성 설치
 pip install -r app/requirements.txt
 
+# tkinter가 없는 경우 (macOS)
+brew install python-tk@3.12  # Python 버전에 맞게 변경
+
 # 실행
 python -m app.main
 ```
+
+### 초기 설정 (페어링)
+
+앱을 처음 실행하면 Apple TV와 **Companion 프로토콜 페어링**이 필요합니다. 페어링은 전원, 볼륨 등 모든 기능을 사용하기 위해 반드시 필요합니다.
+
+1. 앱 실행 후 자동으로 네트워크의 Apple TV를 검색합니다
+2. 기기를 선택하면 페어링 다이얼로그가 표시됩니다
+3. Apple TV 화면에 표시된 **4자리 PIN**을 입력합니다
+4. 페어링이 완료되면 자동으로 연결됩니다
+
+크레덴셜은 `~/Library/Application Support/TVRemote/credentials.json`에 저장되며, 이후 실행 시 자동으로 연결됩니다.
+
+> 같은 네트워크에 Apple TV와 Mac이 연결되어 있어야 합니다.
 
 ### .app 번들 빌드
 

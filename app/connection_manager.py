@@ -34,6 +34,7 @@ class ConnectionManager:
         self._devices: dict[str, pyatv.interface.BaseConfig] = {}
         self._connections: dict[str, AppleTV] = {}
         self._pairing_handlers: dict[str, pyatv.interface.PairingHandler] = {}
+        self._is_suspended = False
 
     def _load_credentials(self) -> dict:
         if CREDENTIALS_FILE.exists():
@@ -49,6 +50,11 @@ class ConnectionManager:
         for protocol_name, credentials in creds.items():
             protocol = pyatv.const.Protocol[protocol_name]
             config.set_credentials(protocol, credentials)
+
+    def has_credentials(self, device_id: str) -> bool:
+        """Companion 크레덴셜이 있는지 확인한다."""
+        creds = self._load_credentials().get(device_id, {})
+        return "Companion" in creds
 
     async def scan(self, timeout: float = 5.0) -> list[dict]:
         loop = asyncio.get_event_loop()
@@ -166,7 +172,8 @@ class ConnectionManager:
             raise RuntimeError("연결된 기기가 없습니다.")
 
         atv = self.get_connection(device_id)
-        if atv.power.power_state == PowerState.On:
+        state = atv.power.power_state
+        if state == PowerState.On:
             await atv.power.turn_off()
         else:
             await atv.power.turn_on()

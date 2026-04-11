@@ -199,6 +199,16 @@ class DeviceListFrame(ctk.CTkFrame):
         self._error_label.configure(text="")
         self._scan_btn.configure(state="disabled", text="연결 중...")
 
+        # Companion 크레덴셜이 없으면 페어링부터 진행
+        if not self._manager.has_credentials(device["id"]):
+            self._scan_btn.configure(state="normal", text="기기 검색")
+            PairingDialog(
+                self.winfo_toplevel(), device["id"],
+                self._bridge, self._manager,
+                on_paired=lambda did: self._after_pairing(device),
+            )
+            return
+
         self._bridge.run_with_callback(
             self._manager.connect(device["id"]),
             root=self,
@@ -212,12 +222,7 @@ class DeviceListFrame(ctk.CTkFrame):
 
     def _on_connect_error(self, device, error):
         self._scan_btn.configure(state="normal", text="기기 검색")
-        # 페어링이 필요할 수 있음
-        PairingDialog(
-            self.winfo_toplevel(), device["id"],
-            self._bridge, self._manager,
-            on_paired=lambda did: self._after_pairing(device),
-        )
+        self._error_label.configure(text=f"연결 실패: {error}")
 
     def _after_pairing(self, device):
         """페어링 후 연결 시도."""
