@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Apple TV Remote</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* ─── 타이틀 바 (드래그 영역) ─── */
+        #titlebar {
+            width: 100%;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            -webkit-app-region: drag;
+            flex-shrink: 0;
+        }
+        #titlebar-close {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff5f57;
+            border: none;
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+            transition: opacity 0.15s;
+        }
+        #titlebar-close:hover { opacity: 0.8; }
+
+        /* ─── 기기 선택 화면 ─── */
+        #device-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            width: 100%;
+            padding: 32px;
+            gap: 20px;
+        }
+        #device-select h2 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        #device-select .subtitle {
+            font-size: 14px;
+            color: #8e8e93;
+            margin-top: -12px;
+        }
+        #device-list {
+            width: 100%;
+            max-width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .device-item {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 14px;
+            font-size: 15px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .device-item:hover { background: rgba(255,255,255,0.12); }
+        .device-item:active { transform: scale(0.97); }
+        .device-item .addr { font-size: 12px; color: #636366; margin-top: 3px; }
+        #scan-btn {
+            background: #0a84ff;
+            color: #fff;
+            border: none;
+            padding: 13px 36px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        #scan-btn:hover { background: #409cff; }
+        #scan-btn:active { transform: scale(0.96); }
+        #scan-btn:disabled { opacity: 0.35; }
+
+        /* ─── 페어링 오버레이 ─── */
+        #pairing-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        #pairing-box {
+            background: #1c1c1e;
+            border-radius: 20px;
+            padding: 32px;
+            width: 300px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        #pairing-box h3 { font-size: 18px; margin-bottom: 8px; }
+        #pairing-box .hint { font-size: 13px; color: #8e8e93; margin-bottom: 20px; }
+        #pin-input {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 12px;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            outline: none;
+        }
+        #pin-input:focus { border-color: #0a84ff; }
+        #pin-submit {
+            background: #0a84ff;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+        #pin-submit:disabled { opacity: 0.35; }
+        #pairing-error { color: #ff453a; font-size: 13px; margin-top: 12px; min-height: 18px; }
+        #pairing-cancel {
+            background: none;
+            border: none;
+            color: #8e8e93;
+            font-size: 13px;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+
+        /* ─── 리모트 화면 ─── */
+        #remote {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            width: 100%;
+            max-width: 400px;
+            padding: 0 20px;
+        }
+
+        /* 상단 상태 */
+        #header {
+            padding: 20px 0 8px;
+            text-align: center;
+            width: 100%;
+        }
+        #device-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        #status-text {
+            font-size: 15px;
+            font-weight: 500;
+            color: #fff;
+            margin-top: 4px;
+            min-height: 22px;
+        }
+
+        /* D-pad 영역 */
+        #dpad-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        #trackpad {
+            width: 240px;
+            height: 240px;
+            background: linear-gradient(145deg, #1c1c1e, #2c2c2e);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow:
+                0 2px 20px rgba(0,0,0,0.5),
+                inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        #trackpad-center {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #3a3a3c, #2c2c2e);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            cursor: pointer;
+            z-index: 2;
+            transition: all 0.1s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        #trackpad-center:active {
+            transform: scale(0.92);
+            background: linear-gradient(145deg, #4a4a4c, #3a3a3c);
+        }
+        .track-btn {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.25);
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.1s ease;
+        }
+        .track-btn:hover { color: rgba(255,255,255,0.5); }
+        .track-btn:active {
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+            transform: scale(0.9);
+        }
+        .track-btn.up { top: 8px; }
+        .track-btn.down { bottom: 8px; }
+        .track-btn.left { left: 8px; }
+        .track-btn.right { right: 8px; }
+
+        /* ─── 하단 버튼 ─── */
+        #buttons {
+            width: 100%;
+            padding-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .ctrl-btn {
+            background: rgba(255,255,255,0.08);
+            border: none;
+            color: #fff;
+            width: 60px;
+            height: 52px;
+            border-radius: 14px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: all 0.1s ease;
+        }
+        .ctrl-btn:hover { background: rgba(255,255,255,0.12); }
+        .ctrl-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.16); }
+        .ctrl-btn .lbl { font-size: 9px; color: #636366; font-weight: 500; }
+        .ctrl-btn.power { color: #ff453a; }
+        .ctrl-btn.wide { width: 132px; }
+
+        /* 키보드 바 */
+        #keyboard-bar {
+            display: none;
+            width: 100%;
+            padding: 8px 0;
+            gap: 8px;
+        }
+        #keyboard-bar input {
+            flex: 1;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 15px;
+            outline: none;
+        }
+        #keyboard-bar input:focus { border-color: #0a84ff; }
+        #keyboard-bar button {
+            background: #0a84ff;
+            border: none;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* 연결 해제 */
+        #disconnect-btn {
+            background: none;
+            border: none;
+            color: #48484a;
+            font-size: 12px;
+            padding: 8px;
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        #disconnect-btn:hover { color: #ff453a; }
+    </style>
+</head>
+<body>
+
+<!-- 타이틀 바 -->
+<div id="titlebar">
+    <button id="titlebar-close" onclick="window.pywebview.api.shutdown(); window.close();"></button>
+</div>
+
+<!-- 기기 선택 -->
+<div id="device-select">
+    <h2>Apple TV Remote</h2>
+    <p class="subtitle">같은 네트워크의 Apple TV를 검색합니다</p>
+    <div id="device-list"></div>
+    <button id="scan-btn" onclick="scanDevices()">기기 검색</button>
+</div>
+
+<!-- 페어링 -->
+<div id="pairing-overlay">
+    <div id="pairing-box">
+        <h3>페어링</h3>
+        <p class="hint" id="pairing-hint">Apple TV에 표시된 PIN을 입력하세요</p>
+        <input type="text" id="pin-input" maxlength="4" placeholder="0000" inputmode="numeric">
+        <button id="pin-submit" onclick="submitPin()">확인</button>
+        <div id="pairing-error"></div>
+        <button id="pairing-cancel" onclick="cancelPairing()">취소</button>
+    </div>
+</div>
+
+<!-- 리모트 -->
+<div id="remote">
+    <div id="header">
+        <div id="device-name"></div>
+        <div id="status-text"></div>
+    </div>
+
+    <div id="dpad-area">
+        <div id="trackpad">
+            <button class="track-btn up" onclick="send('up')">▲</button>
+            <button class="track-btn left" onclick="send('left')">◀</button>
+            <div id="trackpad-center" onclick="send('select')">OK</div>
+            <button class="track-btn right" onclick="send('right')">▶</button>
+            <button class="track-btn down" onclick="send('down')">▼</button>
+        </div>
+    </div>
+
+    <div id="buttons">
+        <div class="btn-row">
+            <button class="ctrl-btn" onclick="send('previous')">⏮<span class="lbl">이전</span></button>
+            <button class="ctrl-btn" onclick="send('play_pause')">⏯<span class="lbl">재생</span></button>
+            <button class="ctrl-btn" onclick="send('next')">⏭<span class="lbl">다음</span></button>
+        </div>
+        <div class="btn-row">
+            <button class="ctrl-btn" onclick="send('menu')">☰<span class="lbl">메뉴</span></button>
+            <button class="ctrl-btn" onclick="send('home')">⌂<span class="lbl">홈</span></button>
+            <button class="ctrl-btn" onclick="send('volume_down')">🔉<span class="lbl">볼륨−</span></button>
+            <button class="ctrl-btn" onclick="send('volume_up')">🔊<span class="lbl">볼륨+</span></button>
+            <button class="ctrl-btn power" onclick="sendPower()">⏻<span class="lbl">전원</span></button>
+        </div>
+        <div id="keyboard-bar">
+            <input type="text" id="kb-input" placeholder="텍스트 입력">
+            <button onclick="sendText()">전송</button>
+        </div>
+        <div class="btn-row">
+            <button class="ctrl-btn wide" onclick="toggleKeyboard()">⌨️<span class="lbl">키보드</span></button>
+        </div>
+        <div class="btn-row">
+            <button id="disconnect-btn" onclick="doDisconnect()">연결 해제</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let connectedDevice = null;
+    let pairingDeviceId = null;
+    let statusTimer = null;
+
+    function api() { return window.pywebview.api; }
+
+    // ─── 기기 검색 ───
+    async function scanDevices() {
+        const btn = document.getElementById('scan-btn');
+        btn.disabled = true;
+        btn.textContent = '검색 중...';
+        try {
+            const data = await api().scan_devices();
+            const list = document.getElementById('device-list');
+            list.innerHTML = '';
+            if (data.error) { alert('검색 실패: ' + data.error); return; }
+            data.devices.forEach(d => {
+                const el = document.createElement('button');
+                el.className = 'device-item';
+                el.innerHTML = `${d.name}<div class="addr">${d.address}</div>`;
+                el.onclick = () => connectDevice(d);
+                list.appendChild(el);
+            });
+            if (data.devices.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:#636366;padding:24px;">기기를 찾지 못했습니다</div>';
+            }
+        } catch (e) {
+            alert('검색 실패: ' + e);
+        }
+        btn.disabled = false;
+        btn.textContent = '기기 검색';
+    }
+
+    // ─── 연결 ───
+    async function connectDevice(device) {
+        const result = await api().connect(device.id);
+        if (result.needs_pairing) {
+            showPairing(device.id);
+            return;
+        }
+        connectedDevice = device;
+        document.getElementById('device-name').textContent = device.name;
+        document.getElementById('device-select').style.display = 'none';
+        document.getElementById('remote').style.display = 'flex';
+        startStatusRefresh();
+    }
+
+    // ─── 페어링 ───
+    async function showPairing(deviceId) {
+        pairingDeviceId = deviceId;
+        document.getElementById('pairing-error').textContent = '';
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-submit').disabled = false;
+        document.getElementById('pairing-overlay').style.display = 'flex';
+
+        const result = await api().start_pairing(deviceId);
+        if (result.error) {
+            document.getElementById('pairing-error').textContent = result.error;
+        } else if (result.message) {
+            document.getElementById('pairing-hint').textContent = result.message;
+        }
+        document.getElementById('pin-input').focus();
+    }
+
+    async function submitPin() {
+        const pin = document.getElementById('pin-input').value.trim();
+        if (!pin) return;
+        document.getElementById('pin-submit').disabled = true;
+        document.getElementById('pairing-error').textContent = '';
+
+        const result = await api().finish_pairing(pairingDeviceId, pin);
+        if (result.error) {
+            document.getElementById('pairing-error').textContent = result.error;
+            document.getElementById('pin-submit').disabled = false;
+            return;
+        }
+        if (result.paired) {
+            document.getElementById('pairing-overlay').style.display = 'none';
+            // 연결됨
+            const devices = (await api().scan_devices()).devices || [];
+            const device = devices.find(d => d.id === pairingDeviceId) || { id: pairingDeviceId, name: 'Apple TV' };
+            connectedDevice = device;
+            document.getElementById('device-name').textContent = device.name;
+            document.getElementById('device-select').style.display = 'none';
+            document.getElementById('remote').style.display = 'flex';
+            startStatusRefresh();
+        } else {
+            document.getElementById('pairing-error').textContent = '페어링에 실패했습니다';
+            document.getElementById('pin-submit').disabled = false;
+        }
+    }
+
+    function cancelPairing() {
+        document.getElementById('pairing-overlay').style.display = 'none';
+        pairingDeviceId = null;
+    }
+
+    document.getElementById('pin-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') submitPin();
+    });
+
+    // ─── 리모트 명령 ───
+    async function send(command) {
+        await api().send_command(command);
+    }
+
+    async function sendPower() {
+        await api().toggle_power();
+    }
+
+    // ─── 키보드 입력 ───
+    function toggleKeyboard() {
+        const bar = document.getElementById('keyboard-bar');
+        bar.style.display = bar.style.display === 'flex' ? 'none' : 'flex';
+        if (bar.style.display === 'flex') {
+            document.getElementById('kb-input').focus();
+        }
+    }
+
+    async function sendText() {
+        const input = document.getElementById('kb-input');
+        if (!input.value) return;
+        await api().send_text(input.value);
+        input.value = '';
+    }
+
+    document.getElementById('kb-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') sendText();
+    });
+
+    // ─── 키보드 단축키 ───
+    document.addEventListener('keydown', e => {
+        if (!connectedDevice) return;
+        if (document.activeElement.tagName === 'INPUT') return;
+        const map = {
+            ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+            Enter: 'select', Escape: 'menu', Backspace: 'menu',
+            ' ': 'play_pause',
+        };
+        if (map[e.key]) {
+            e.preventDefault();
+            send(map[e.key]);
+        }
+    });
+
+    // ─── 상태 갱신 ───
+    function startStatusRefresh() {
+        refreshStatus();
+        statusTimer = setInterval(refreshStatus, 5000);
+    }
+
+    async function refreshStatus() {
+        if (!connectedDevice) return;
+        const data = await api().get_status();
+        let text = '';
+        if (data.title) text = data.title;
+        if (data.artist) text += ' — ' + data.artist;
+        if (!text && data.app) text = data.app;
+        document.getElementById('status-text').textContent = text;
+    }
+
+    // ─── 연결 해제 ───
+    async function doDisconnect() {
+        if (statusTimer) { clearInterval(statusTimer); statusTimer = null; }
+        await api().disconnect();
+        connectedDevice = null;
+        document.getElementById('remote').style.display = 'none';
+        document.getElementById('device-select').style.display = 'flex';
+    }
+
+    // ─── 초기 검색 ───
+    window.addEventListener('pywebviewready', () => {
+        scanDevices();
+    });
+</script>
+</body>
+</html>

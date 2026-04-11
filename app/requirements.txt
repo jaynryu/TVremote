@@ -1,2 +1,2 @@
 pyatv>=0.14.0
-customtkinter>=5.2.0
+pywebview>=5.0

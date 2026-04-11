@@ -1,28 +1,28 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
-import customtkinter
 
 block_cipher = None
-
-ctk_path = os.path.dirname(customtkinter.__file__)
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
     datas=[
-        (ctk_path, 'customtkinter/'),
+        ('ui/index.html', 'app/ui/'),
     ],
     hiddenimports=[
         'pyatv',
         'pyatv.protocols',
         'pyatv.protocols.companion',
+        'pyatv.protocols.companion.api',
         'pyatv.protocols.airplay',
         'pyatv.protocols.mrp',
         'pyatv.protocols.dmap',
         'pyatv.protocols.raop',
         'zeroconf',
         'zeroconf._utils',
+        'webview',
+        'webview.platforms.cocoa',
     ],
     hookspath=[],
     hooksconfig={},
@@ -64,7 +64,7 @@ app = BUNDLE(
     bundle_identifier='com.tvremote.app',
     info_plist={
         'CFBundleDisplayName': 'TV Remote',
-        'CFBundleShortVersionString': '1.0.0',
+        'CFBundleShortVersionString': '2.0.0',
         'NSLocalNetworkUsageDescription': 'Apple TV 기기를 검색하기 위해 로컬 네트워크 접근이 필요합니다.',
         'NSBonjourServices': ['_appletv-v2._tcp', '_companion-link._tcp'],
         'NSHighResolutionCapable': True,
