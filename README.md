@@ -10,21 +10,22 @@ macOS에서 Apple TV를 제어하는 리모트 앱입니다.
 
 | 구성 요소 | 경로 | 설명 |
 |-----------|------|------|
-| **macOS 데스크톱 앱** | `app/` | 서버 없이 단독 실행되는 GUI 앱 (customtkinter + pyatv) |
+| **macOS 데스크톱 앱** | `app/` | 서버 없이 단독 실행되는 GUI 앱 (pywebview + pyatv) |
 | **API 서버** | `server/` | FastAPI + pyatv 기반 REST API |
 | **웹 리모트** | `server/static/` | 브라우저에서 사용하는 리모트 UI |
 | **iOS 앱** | `TVRemote/` | SwiftUI 네이티브 앱 (서버 필요) |
 
 ## macOS 데스크톱 앱
 
-서버 없이 Apple TV를 직접 제어하는 단독 실행 앱입니다.
+서버 없이 Apple TV를 직접 제어하는 단독 실행 앱입니다. pywebview를 사용하여 네이티브 윈도우 안에 웹 기반 UI를 임베드합니다.
 
 ### 기능
 
-- 기기 검색 및 페어링
-- D-pad 방향키 / OK 버튼
+- 기기 검색 및 Companion 프로토콜 페어링
+- 원형 트랙패드 (방향키 + OK)
 - 재생 컨트롤 (재생/일시정지, 이전, 다음)
-- 볼륨 조절, 메뉴, 홈, 전원
+- 볼륨 조절, 메뉴, 홈
+- 전원 버튼 (Apple TV 리모컨과 동일 — 컨트롤 센터 표시)
 - 키보드 텍스트 입력
 - 재생 상태 표시 (5초 자동 갱신)
 - 키보드 단축키 (화살표, Enter, Esc, Space)
@@ -35,9 +36,6 @@ macOS에서 Apple TV를 제어하는 리모트 앱입니다.
 # 의존성 설치
 pip install -r app/requirements.txt
 
-# tkinter가 없는 경우 (macOS)
-brew install python-tk@3.12  # Python 버전에 맞게 변경
-
 # 실행
 python -m app.main
 ```
@@ -46,7 +44,7 @@ python -m app.main
 
 앱을 처음 실행하면 Apple TV와 **Companion 프로토콜 페어링**이 필요합니다. 페어링은 전원, 볼륨 등 모든 기능을 사용하기 위해 반드시 필요합니다.
 
-1. 앱 실행 후 자동으로 네트워크의 Apple TV를 검색합니다
+1. 앱 실행 후 자동으로 같은 네트워크의 Apple TV를 검색합니다
 2. 기기를 선택하면 페어링 다이얼로그가 표시됩니다
 3. Apple TV 화면에 표시된 **4자리 PIN**을 입력합니다
 4. 페어링이 완료되면 자동으로 연결됩니다
