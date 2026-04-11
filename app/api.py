@@ -11,6 +11,10 @@ class Api:
     def __init__(self, bridge: AsyncBridge, manager: ConnectionManager):
         self._bridge = bridge
         self._manager = manager
+        self._window = None
+
+    def set_window(self, window):
+        self._window = window
 
     def scan_devices(self):
         future = self._bridge.run(self._manager.scan())
@@ -103,3 +107,14 @@ class Api:
         except Exception:
             pass
         self._bridge.shutdown()
+
+    def quit(self):
+        """앱을 종료한다."""
+        import os
+        try:
+            future = self._bridge.run(self._manager.shutdown())
+            future.result(timeout=1)
+        except Exception:
+            pass
+        self._bridge.shutdown()
+        os._exit(0)
